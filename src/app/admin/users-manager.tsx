@@ -23,7 +23,6 @@ import { userService } from '@/services/user-service';
 const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
 
 const profileFormSchema = z.object({
-  id: z.string(),
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
   positions: z.array(z.object({
     fullName: z.string().min(2, 'El nombre completo del cargo es requerido.'),
@@ -58,7 +57,6 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (values: User) => void, canEdit: boolean }) {
-  const { toast } = useToast();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
          defaultValues: {
@@ -85,6 +83,23 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
 
   const watchedWorkHours = form.watch('workHours');
 
+  const workDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const dayTranslations: { [key: string]: string } = {
+      Monday: 'Lunes',
+      Tuesday: 'Martes',
+      Wednesday: 'Miércoles',
+      Thursday: 'Jueves',
+      Friday: 'Viernes',
+  }
+
+  const formatTime = (value: string) => {
+    const cleaned = value.replace(/[^0-9]/g, '');
+    if (cleaned.length >= 3) {
+      return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
+    }
+    return cleaned;
+  };
+
   function onSubmit(values: ProfileFormValues) {
     const updatedUser: User = {
         ...user,
@@ -103,29 +118,7 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
         ) as { [key: string]: any }),
     };
     onUpdate(updatedUser);
-    toast({
-      variant: "success",
-      title: "¡Éxito!",
-      description: "¡Perfil actualizado exitosamente!",
-    });
   }
-
-  const workDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const dayTranslations: { [key: string]: string } = {
-      Monday: 'Lunes',
-      Tuesday: 'Martes',
-      Wednesday: 'Miércoles',
-      Thursday: 'Jueves',
-      Friday: 'Viernes',
-  }
-
-  const formatTime = (value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, '');
-    if (cleaned.length >= 3) {
-      return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
-    }
-    return cleaned;
-  };
 
   return (
     <Form {...form}>
@@ -352,7 +345,7 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
             </FormItem>
           )}
         />
-        {canEdit && <Button type="submit" itemType='submit'>Guardar Perfil</Button>}
+        <Button type="submit" itemType='submit'>Guardar Perfil</Button>
       </form>
     </Form>
   );
@@ -361,7 +354,7 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
 export default function UsersManager({ canManageUsers }: { canManageUsers: boolean }) {
   const { users, setUsers } = React.useContext(UserContext);
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [newUserDraft, setNewUserDraft] = React.useState<User | null>(null);
+  const [newUserDraft, setNewUserDraft] = React.useState<Partial<User> | null>(null);
   const { toast } = useToast();
 
   const handleUpdateUser = (updatedUser: User) => {
@@ -369,10 +362,9 @@ export default function UsersManager({ canManageUsers }: { canManageUsers: boole
   };
   
   const handleAddUser = () => {
-      const draft: User = {
-        id: `user-${Date.now()}`,
-        name: ``,
-        email: ``,
+      const draft: Partial<User> = {
+        name: '',
+        email: '',
         positions: [{ fullName: '', shortName: '' }],
         role: 'user',
         workHours: {
@@ -391,20 +383,24 @@ export default function UsersManager({ canManageUsers }: { canManageUsers: boole
       setIsCreateOpen(true);
   };
 
-  const handleCreateUser = async (createdValues: User) => {
-      try {
-        const created = await userService.create(createdValues as any);
-        setUsers(current => [...current, created]);
-        setIsCreateOpen(false);
-        setNewUserDraft(null);
-      } catch (error) {
-        console.error('Failed to create user', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudo crear el usuario",
-        });
-      }
+  const handleCreateUser = async (formValues: User) => {
+    setIsCreateOpen(false);
+    try {
+      const created = await userService.create(formValues);
+      setUsers(current => [...current, created]);
+      toast({
+        variant: "success",
+        title: "¡Éxito!",
+        description: "¡Usuario creado exitosamente!",
+      });        
+    } catch (error) {
+      console.error('Failed to create user', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el usuario",
+      });
+    }
   };
 
   return (
@@ -460,7 +456,7 @@ export default function UsersManager({ canManageUsers }: { canManageUsers: boole
                <DialogTitle>Crear Usuario</DialogTitle>
              </DialogHeader>
              {newUserDraft && (
-               <UserProfileForm user={newUserDraft} onUpdate={handleCreateUser} canEdit={true} />
+               <UserProfileForm user={newUserDraft as User} onUpdate={handleCreateUser} canEdit={true} />
              )}
            </DialogContent>
          </Dialog>

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authClient } from '@/lib/supabase/auth';
 import type { User } from "@/types";
 
 
@@ -42,24 +43,44 @@ export const userService = {
     },
   
     async create(user: User): Promise<User> {
-      const { workHours, frequentTasks, ...etc } = user as unknown as any;
-      const payload = {
-        work_hours: workHours,
-        frequent_tasks: frequentTasks,
-        ...etc,
+      // enviar invitacion por email (crea el usuario en supabase)
+      const { data: _authData, error: authError } = await authClient.inviteUserByEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth/sign-up`,
+        data: {
+          name: user.name,
+          role: user.role,
+        },
+      });
+
+      if (authError) {
+        console.error(authError);
+        throw authError.message;
       };
-  
+
+      // insertar en db
       const { data, error } = await supabase
         .from('users')
-        .insert(payload)
+        .insert({
+          id: _authData.user?.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          work_hours: user.workHours,
+          frequent_tasks: user.frequentTasks,
+          positions: user.positions,
+          color: user.color,
+        })
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error(error);
+        throw error.message;
+      };
   
       const createdUser: User = {
-        workHours: (data as any).work_hours,
-        frequentTasks: (data as any).frequent_tasks,
+        workHours: data.work_hours,
+        frequentTasks: data.frequent_tasks,
         ...data,
       };
   
@@ -67,7 +88,7 @@ export const userService = {
     },
   
     async update(id: string, updates: Partial<User>): Promise<User> {
-      const { workHours, frequentTasks, ...rest } = updates as unknown as any;
+      const { workHours, frequentTasks, ...rest } = updates;
       const updatePayload = {
         ...rest,
         ...(typeof workHours !== 'undefined' ? { work_hours: workHours } : {}),

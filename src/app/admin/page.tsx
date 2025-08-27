@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import UsersManager from '@/app/admin/users-manager';
 import NoveltiesManager from '@/app/admin/novelties-manager';
 import { useSession } from 'next-auth/react';
+import TasksManager from '../tasks/page';
 
 
 
@@ -46,9 +47,13 @@ export default function AdminPage() {
              <h1 className="text-3xl font-bold font-headline mb-6">Panel de Administración</h1>
              <Tabs defaultValue="users">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
+                    <TabsTrigger value="tasks">Gestionar Tareas</TabsTrigger>
                     <TabsTrigger value="users">Gestionar Usuarios</TabsTrigger>
                     <TabsTrigger value="novelties">Gestionar Novedades</TabsTrigger>
                 </TabsList>
+                <TabsContent value="tasks">
+                    <TasksManager />
+                </TabsContent>
                 <TabsContent value="users">
                     <UsersManager canManageUsers={canAccessAdmin} />
                 </TabsContent>

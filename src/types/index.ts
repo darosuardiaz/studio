@@ -17,7 +17,7 @@ export type Position = {
 export type User = {
   id: string;
   name: string;
-  email?: string;
+  email: string;
   positions: Position[];
   role: 'owner' | 'admin' | 'user';
   workHours: { [key: string]: WorkDay };

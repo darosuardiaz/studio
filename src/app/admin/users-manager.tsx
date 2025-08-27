@@ -19,16 +19,21 @@ import { UserContext } from '@/context/UserContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { userService } from '@/services/user-service';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
 
 const profileFormSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
+  lastname: z.string().min(2, 'El apellido debe tener al menos 2 caracteres.'),
   positions: z.array(z.object({
     fullName: z.string().min(2, 'El nombre completo del cargo es requerido.'),
     shortName: z.string().min(1, 'La abreviatura es requerida.').max(15, 'Máximo 15 caracteres.'),
   })).min(1, 'Se requiere al menos un cargo.').max(3, 'Se permiten hasta 3 cargos.'),
   email: z.string().email(),
+  role: z.enum(['admin', 'user', 'owner']),
   color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Debe ser un color hexadecimal válido'),
   frequentTasks: z.string().optional(),
   workHours: z.record(
@@ -56,12 +61,14 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (values: User) => void, canEdit: boolean }) {
+function UserProfileForm({ user, onUpdate, onDelete, canEdit }: { user: User, onUpdate: (values: User) => void, onDelete: (userId: string) => void, canEdit: boolean }) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
          defaultValues: {
        ...user,
+       role: user.role || 'user',
        email: user.email || '',
+       lastname: user.lastname || '',
       frequentTasks: user.frequentTasks.join('\n'),
       workHours: {
         Monday: { active: user.workHours.Monday?.active || false, virtual: user.workHours.Monday?.virtual || false, start: user.workHours.Monday?.start || '', end: user.workHours.Monday?.end || '' },
@@ -123,33 +130,72 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre Completo</FormLabel>
-              <FormControl>
-                <Input placeholder="Nombre del usuario" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nombre" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastname"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Apellido</FormLabel>
+                <FormControl>
+                  <Input placeholder="Apellido" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Correo Electrónico</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="ejemplo@taskcanvas.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Correo Electrónico</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="ejemplo@taskcanvas.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rol</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un rol" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="owner">Propietario</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
          <div>
           <FormLabel>Cargos</FormLabel>
@@ -345,7 +391,28 @@ function UserProfileForm({ user, onUpdate, canEdit }: { user: User, onUpdate: (v
             </FormItem>
           )}
         />
-        <Button type="submit" itemType='submit'>Guardar Perfil</Button>
+        <div className="flex justify-between items-center">
+          {canEdit && user.id && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive">Eliminar Usuario</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Esta acción no se puede deshacer. Esto eliminará permanentemente la cuenta de <strong>{user.name}</strong> y todos sus datos asociados.
+                  </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction type="button" className={buttonVariants({ variant: "destructive" })} onClick={() => onDelete(user.id)}>Eliminar</AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button type="submit" itemType='submit' disabled={!canEdit || !form.formState.isDirty}>Guardar Cambios</Button>
+        </div>
       </form>
     </Form>
   );
@@ -357,13 +424,49 @@ export default function UsersManager({ canManageUsers }: { canManageUsers: boole
   const [newUserDraft, setNewUserDraft] = React.useState<Partial<User> | null>(null);
   const { toast } = useToast();
 
-  const handleUpdateUser = (updatedUser: User) => {
-    setUsers(currentUsers => currentUsers.map(u => u.id === updatedUser.id ? updatedUser : u));
+  const handleUpdateUser = async (updatedUser: User) => {
+    try {
+      const { id, ...updates } = updatedUser;
+      await userService.update(id, updates);
+      setUsers(currentUsers => currentUsers.map(u => u.id === updatedUser.id ? updatedUser : u));
+      toast({
+        variant: "success",
+        title: "¡Éxito!",
+        description: "¡Usuario actualizado exitosamente!",
+      });
+    } catch (error) {
+      console.error('Failed to update user', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el usuario",
+      });
+    }
   };
   
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await userService.delete(userId);
+      setUsers(current => current.filter(u => u.id !== userId));
+      toast({
+        variant: "success",
+        title: "¡Éxito!",
+        description: "¡Usuario eliminado exitosamente!",
+      });
+    } catch (error) {
+      console.error('Failed to delete user', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el usuario",
+      });
+    }
+  };
+
   const handleAddUser = () => {
       const draft: Partial<User> = {
         name: '',
+        lastname: '',
         email: '',
         positions: [{ fullName: '', shortName: '' }],
         role: 'user',
@@ -407,59 +510,57 @@ export default function UsersManager({ canManageUsers }: { canManageUsers: boole
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-            <div>
-                <CardTitle>Perfiles de Usuario</CardTitle>
-                <CardDescription>
-                    {canManageUsers 
-                        ? "Vea y administre la información y configuración de los usuarios."
-                        : "Vea la información de los usuarios."
-                    }
-                </CardDescription>
-            </div>
-            {canManageUsers && (
-                <Button type="submit" onClick={handleAddUser}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Agregar Usuario
-                </Button>
-            )}
+          <div>
+            <CardTitle>Perfiles de Usuario</CardTitle>
+            <CardDescription>
+                {canManageUsers 
+                  ? "Vea y administre la información y configuración de los usuarios."
+                  : "Vea la información de los usuarios."
+                }
+            </CardDescription>
+          </div>
+          {canManageUsers && (
+            <Button type="submit" onClick={handleAddUser}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Agregar Usuario
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
-        
-        
         <Accordion type="single" collapsible className="w-full">
-            {users.map((user) => (
+          {users.sort((a, b) => a.name.localeCompare(b.name)).map((user) => (
             <AccordionItem value={user.id} key={user.id}>
-                <AccordionTrigger>
-                    <div className="flex items-center gap-4 w-full">
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            <UserIcon className="h-6 w-6" style={{color: user.color, fill: `${user.color}33`}}/>
-                        </div>
-                        <div className="flex-1 text-left">
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                                {user.positions.map(p => p.fullName).join(' / ')}
-                            </div>
-                        </div>
+              <AccordionTrigger>
+                <div className="flex items-center gap-4 w-full">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <UserIcon className="h-6 w-6" style={{color: user.color, fill: `${user.color}33`}}/>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium">{user.name} {user.lastname}</div>
+                    <div className="text-sm text-muted-foreground">
+                        {user.positions.map(p => p.fullName).join(' / ')}
                     </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4">
-                    <UserProfileForm user={user} onUpdate={handleUpdateUser} canEdit={canManageUsers} />
-                </AccordionContent>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-4">
+                  <UserProfileForm user={user} onUpdate={handleUpdateUser} onDelete={handleDeleteUser} canEdit={canManageUsers} />
+              </AccordionContent>
             </AccordionItem>
-            ))}
+          ))}
         </Accordion>
       </CardContent>
-             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-             <DialogHeader>
-               <DialogTitle>Crear Usuario</DialogTitle>
-             </DialogHeader>
-             {newUserDraft && (
-               <UserProfileForm user={newUserDraft as User} onUpdate={handleCreateUser} canEdit={true} />
-             )}
-           </DialogContent>
-         </Dialog>
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crear Usuario</DialogTitle>
+          </DialogHeader>
+          {newUserDraft && (
+            <UserProfileForm user={newUserDraft as User} onUpdate={handleCreateUser} onDelete={() => {}} canEdit={true} />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

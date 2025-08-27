@@ -47,7 +47,7 @@ export const userService = {
       const { data: _authData, error: authError } = await authClient.inviteUserByEmail(user.email, {
         redirectTo: `${window.location.origin}/auth/sign-up`,
         data: {
-          name: user.name,
+          name: user.name + ' ' + user.lastname,
           role: user.role,
         },
       });
@@ -63,6 +63,7 @@ export const userService = {
         .insert({
           id: _authData.user?.id,
           name: user.name,
+          lastname: user.lastname,
           email: user.email,
           role: user.role,
           work_hours: user.workHours,
@@ -113,6 +114,25 @@ export const userService = {
       return updatedUser;
     },
   
+    async delete(id: string): Promise<void> {
+      const { error: authError } = await authClient.deleteUser(id);
+  
+      if (authError) {
+        console.error('Error deleting user from auth:', authError);
+        throw new Error('Failed to delete user from authentication service.');
+      }
+  
+      const { error: dbError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+  
+      if (dbError) {
+        console.error('Error deleting user from database:', dbError);
+        throw new Error('User was deleted from authentication, but failed to delete from database.');
+      }
+    },
+
     async upsertMany(users: User[]): Promise<User[]> {
       const { data, error } = await supabase
         .from('users')

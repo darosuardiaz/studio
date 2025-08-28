@@ -49,7 +49,7 @@ export function UserNav() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuItem onSelect={() => signOut({ callbackUrl: '/login' })}>
+        <DropdownMenuItem onSelect={() => signOut({ callbackUrl: '/auth/login' })}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Cerrar sesión</span>
         </DropdownMenuItem>

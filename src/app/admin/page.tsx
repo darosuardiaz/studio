@@ -45,7 +45,7 @@ export default function AdminPage() {
     return (
         <div className="container mx-auto py-10">
              <h1 className="text-3xl font-bold font-headline mb-6">Panel de Administración</h1>
-             <Tabs defaultValue="users">
+             <Tabs defaultValue="tasks">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                     <TabsTrigger value="tasks">Gestionar Tareas</TabsTrigger>
                     <TabsTrigger value="users">Gestionar Usuarios</TabsTrigger>

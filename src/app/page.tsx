@@ -14,7 +14,7 @@ export default function Home() {
     if (session) {
       redirect('/canvas')
     } else {
-      redirect('/login')
+      redirect('/auth/login')
     }
   }, [session, status])
 

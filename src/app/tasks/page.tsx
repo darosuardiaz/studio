@@ -825,98 +825,103 @@ export default function TasksManager() {
             </CardDescription>
         </div>
       </CardHeader>
-      {/* SELECTOR VISTA */}
-      {canManageTasks && (
       <CardContent>
-          <Tabs defaultValue="active">
-             <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                    <TabsTrigger value="active">Activas</TabsTrigger>
-                    <TabsTrigger value="archived">Archivadas</TabsTrigger>
-                </TabsList>
-                {/* CREAR / EXPORTAR */}
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => setIsTaskCreatorOpen(true)} className="bg-green-600 hover:bg-green-700 text-white">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Crear Tarea
-                    </Button>
-                    <Button variant="outline" onClick={() => exportToCSV(filteredTasks)} className="bg-white border-gray-300 shadow-sm hover:bg-gray-50">
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar Todo
-                    </Button>
-                </div>
-             </div>
-             
-             {/* FILTROS */}
-             <div className="mb-4 flex flex-col md:flex-row gap-2">
-                {/* BUSCADOR */}
-                <Input
-                placeholder="Buscar por título o descripción..."
-                value={filters.searchTerm}
-                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                className="max-w-sm"
-                />
+        <Tabs defaultValue="active">  
+          {/* TABS SELECTOR */}
+          <div className="flex items-center justify-between mb-4">
+            {canManageTasks && (
+              <TabsList>
+                <TabsTrigger value="active">Activas</TabsTrigger>
+                <TabsTrigger value="archived">Archivadas</TabsTrigger>
+              </TabsList>
+            )}
 
-                {/* FILTRO POR USUARIO */}
-                <Select
-                value={filters.user}
-                onValueChange={(value) => handleFilterChange('user', value)}
-                >
-                <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Filtrar por usuario" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Usuarios</SelectItem>
-                    {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                    </SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
+            {/* CREAR / EXPORTAR */}
+            {canManageTasks && (
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setIsTaskCreatorOpen(true)} className="bg-green-600 hover:bg-green-700 text-white">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Crear Tarea
+                </Button>
+                <Button variant="outline" onClick={() => exportToCSV(filteredTasks)} className="bg-white border-gray-300 shadow-sm hover:bg-gray-50">
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar Todo
+                </Button>
+              </div>
+            )}
+          </div>
+            
+          {/* FILTROS */}
+          <div className="mb-4 flex flex-col md:flex-row gap-2">
+            {/* BUSCADOR */}
+            <Input
+              placeholder="Buscar por título o descripción..."
+              value={filters.searchTerm}
+              onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+              className="max-w-sm"
+            />
 
-                {/* FILTRO POR ESTADO */}
-                <Select
-                value={filters.status}
-                onValueChange={(value) => handleFilterChange('status', value)}
-                >
-                <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Estados</SelectItem>
-                    <SelectItem value="todo">Por hacer</SelectItem>
-                    <SelectItem value="in-progress">En progreso</SelectItem>
-                    <SelectItem value="done">Hecho</SelectItem>
-                    <SelectItem value="archived">Archivado</SelectItem>
-                </SelectContent>
-                </Select>
-                
-                {/* FILTRO POR DIA */}
-                <Select
-                value={filters.day}
-                onValueChange={(value) => handleFilterChange('day', value)}
-                >
-                <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Filtrar por día" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos los Días</SelectItem>
-                    {Object.entries(dayMap).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>{value}</SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
-            </div>
-            <TabsContent value="active">
-                <TasksTable tasks={activeTasks} onEdit={setEditingTask} canManageTasks={canManageTasks} />
-            </TabsContent>
-            <TabsContent value="archived">
-                <TasksTable tasks={archivedTasks} onEdit={setEditingTask} canManageTasks={canManageTasks} />
-            </TabsContent>
+            {/* FILTRO POR USUARIO */}
+            <Select
+            value={filters.user}
+            onValueChange={(value) => handleFilterChange('user', value)}
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filtrar por usuario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Usuarios</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* FILTRO POR ESTADO */}
+            <Select
+              value={filters.status}
+              onValueChange={(value) => handleFilterChange('status', value)}
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filtrar por estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Estados</SelectItem>
+                <SelectItem value="todo">Por hacer</SelectItem>
+                <SelectItem value="in-progress">En progreso</SelectItem>
+                <SelectItem value="done">Hecho</SelectItem>
+                <SelectItem value="archived">Archivado</SelectItem>
+              </SelectContent>
+            </Select>
+              
+            {/* FILTRO POR DIA */}
+            <Select
+              value={filters.day}
+              onValueChange={(value) => handleFilterChange('day', value)}
+            >
+              <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filtrar por día" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Días</SelectItem>
+                {Object.entries(dayMap).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>{value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* TABS */}
+          <TabsContent value="active">
+            <TasksTable tasks={activeTasks} onEdit={setEditingTask} canManageTasks={canManageTasks} />
+          </TabsContent>
+          <TabsContent value="archived">
+            <TasksTable tasks={archivedTasks} onEdit={setEditingTask} canManageTasks={canManageTasks} />
+          </TabsContent>
         </Tabs>
       </CardContent>
-      )}
     </Card>
       
     <Dialog open={!!editingTask} onOpenChange={(isOpen) => !isOpen && setEditingTask(null)}>

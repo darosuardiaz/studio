@@ -19,7 +19,7 @@ const handler = NextAuth({
   },
   callbacks: {
     async signIn({ user }: { user: any }) {
-      // console.log('signIn', user)
+
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -34,6 +34,7 @@ const handler = NextAuth({
       user.id = data.id
       return true
     },
+
     async jwt({ token, user }: { token: any, user?: any }) {
       if (user?.role) {
         token.role = user.role
@@ -41,6 +42,7 @@ const handler = NextAuth({
       }
       return token
     },
+    
     async session({ session, token }: { session: any, token: any }) {
       if (session?.user && token?.userId) {
         session.user.id = token.userId
